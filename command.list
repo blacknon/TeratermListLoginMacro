@@ -1,0 +1,11 @@
+#dateコマンドを実行する
+date
+
+#whoamiコマンドを実行する
+whoami
+
+#pwdコマンドを実行する
+pwd
+
+#hostnameコマンドを実行する
+hostname

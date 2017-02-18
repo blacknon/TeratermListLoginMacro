@@ -1,0 +1,303 @@
+;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+;  Filename : SSHListLogin.ttl
+;  Description : SSH List login - host selection listbox from host.list
+;  Author : Blacknon
+;  Created : 2015/01/18
+;  Modified : 2017/02/18
+;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+;;-------------------------------------------------------
+;; 接続時の基本的な情報を設定する
+;;-------------------------------------------------------
+;; ホストに関する情報をもつファイル「host.list」の場所を設定する
+ HOST_FILE = "host.list"
+
+;; ログイン時に実行させるコマンドの情報をもつファイル「command.list」の場所を設定する
+ COMMAND_FILE = "command.list"
+
+;; ログ作成用ディレクトリの情報を取得する
+ getdir CurrentDir
+ LOG_DIR_PATH = CurrentDir
+ strconcat LOG_DIR_PATH 'K:\log'
+
+;; iniファイル設置ディレクトリの情報を取得する
+ getdir CurrentDir
+ INI_DIR_PATH = CurrentDir
+ strconcat INI_DIR_PATH '\ini\'
+
+
+
+;;-------------------------------------------------------
+;; ホスト選択画面を作成する
+;;-------------------------------------------------------
+;; ホストファイルの行数を取得する
+ fileopen HOST_LIST HOST_FILE 0
+ i = 0
+ while
+     filereadln HOST_LIST LIST_LINE
+
+    ;;ファイル読み込みの終了処理
+     if result = 1 then
+       break
+     endif
+
+    ;; 空白行を無視する
+     strlen LIST_LINE
+     if result = 0 then
+       continue
+     endif
+
+    ;; 「#」から始まる行をコメントとして無視
+     strmatch LIST_LINE '^#'
+     if result <> 0 then
+       continue
+     endif
+     i=i+1
+ endwhile
+
+;; 配列を作成
+ strdim HOST_NAME i
+ strdim HOST_INI i
+ strdim HOST_TYPE i
+ strdim HOST_IP i
+ strdim HOST_KEY i
+ strdim HOST_USER i
+ strdim HOST_PASS i
+ strdim HOST_ROOT_USER i
+ strdim HOST_ROOT_PASS i
+ strdim HOST_SUDO_FLAG i
+
+;; ホストに関する情報をホストファイルから取得する
+ fileopen HOST_LIST HOST_FILE 0
+ i = 0
+ while
+     filereadln HOST_LIST LIST_LINE
+
+    ;;ファイル読み込みの終了処理
+     if result = 1 then
+       break
+     endif
+
+    ;; 空白行を無視する
+     strlen LIST_LINE
+     if result = 0 then
+       continue
+     endif
+
+    ;; 「#」から始まる行をコメントとして無視
+     strmatch LIST_LINE '^#'
+     if result <> 0 then
+       continue
+     endif
+
+    ;;ホストに関する情報を各変数へ代入する
+     strsplit LIST_LINE ','
+     HOST_NAME[i]      = groupmatchstr1
+     HOST_INI[i]       = groupmatchstr2
+     HOST_TYPE[i]      = groupmatchstr3
+     HOST_IP[i]        = groupmatchstr4
+     HOST_KEY[i]       = groupmatchstr5
+     HOST_ROOT_USER[i] = groupmatchstr6
+     HOST_ROOT_PASS[i] = groupmatchstr7
+     HOST_USER[i]      = groupmatchstr8
+
+    ;; 仕様上、文字列分割で10以降はすべてgroupmatchstr9に代入されるため、ここで再度分割を行う
+     strsplit groupmatchstr9 ','
+     HOST_PASS[i]      = groupmatchstr1
+     HOST_SUDO_FLAG[i] = groupmatchstr2
+
+     i=i+1
+ endwhile
+
+;; ホスト選択画面を表示させる
+ listbox 'ログインするホストを選択してください' 'ホスト選択' HOST_NAME
+
+
+
+;;-------------------------------------------------------
+;; 選択されたホストにログインを行う
+;;-------------------------------------------------------
+;; ホスト選択画面で選択されたホストの情報を変数に代入する
+ if result >= 0 then
+     HOST_CONNECT_NAME      = HOST_NAME[result]
+     HOST_CONNECT_INI       = HOST_INI[result]
+     HOST_CONNECT_TYPE      = HOST_TYPE[result]
+     HOST_CONNECT_IP        = HOST_IP[result]
+     HOST_CONNECT_KEY       = HOST_KEY[result]
+     HOST_CONNECT_ROOT_USER = HOST_ROOT_USER[result]
+     HOST_CONNECT_ROOT_PASS = HOST_ROOT_PASS[result]
+     HOST_CONNECT_USER      = HOST_USER[result]
+     HOST_CONNECT_PASS      = HOST_PASS[result]
+     HOST_CONNECT_SUDO_FLAG = HOST_SUDO_FLAG[result]
+ else
+     end
+ endif
+
+;; ログイン用のユーザーが定義されているか確認する
+ strlen HOST_CONNECT_USER
+ if result <> 0 then
+     SSH_CONNECT_USER = HOST_CONNECT_USER
+     SSH_CONNECT_PASS = HOST_CONNECT_PASS
+ else
+     SSH_CONNECT_USER = HOST_CONNECT_ROOT_USER
+     SSH_CONNECT_PASS = HOST_CONNECT_ROOT_PASS
+ endif
+
+;; 接続用のINIファイルPATHを取得する
+ INI_FILE = INI_DIR_PATH
+ strconcat INI_FILE HOST_CONNECT_INI
+
+;; 鍵ファイルの指定があるかを確認する
+ strlen HOST_CONNECT_KEY
+ if result <> 0 then
+     HOST_CONNECT_KEY_FILE = HOST_CONNECT_KEY
+ else
+     HOST_CONNECT_KEY_FILE = ""
+ endif
+
+;; SSH接続コマンドを作成する
+ COMMAND = HOST_CONNECT_IP
+
+;; sshかtelnetか
+ strcompare HOST_CONNECT_TYPE 'ssh'
+ if result = 0 then
+    ;; sshだった場合
+     strconcat COMMAND ':22 /ssh /2 '
+     strconcat COMMAND '/F="'
+     strconcat COMMAND INI_FILE
+     strconcat COMMAND '" /user='
+     strconcat COMMAND SSH_CONNECT_USER
+
+    ;; パスワード認証の場合
+     strlen SSH_CONNECT_PASS
+     if result <> 0 then
+         strconcat COMMAND ' /passwd='
+         strconcat COMMAND SSH_CONNECT_PASS
+     endif
+
+    ;; 鍵認証の場合
+     strlen HOST_CONNECT_KEY_FILE
+     if result <> 0 then
+         strconcat COMMAND ' /auth=publickey'
+         strconcat COMMAND ' /keyfile='
+         strconcat COMMAND HOST_CONNECT_KEY_FILE
+     else
+         strconcat COMMAND ' /auth=password'
+     endif
+ else
+    ;; sshではなかった場合
+     strconcat COMMAND ':23 /nossh /T=1'
+ endif
+
+;; SSH接続を行う
+ connect COMMAND
+
+
+
+;;-------------------------------------------------------
+;; ログの記録を開始する
+;;-------------------------------------------------------
+;; ログ名に利用する日付情報を取得する
+ getdate Str_Getdate
+ strcopy Str_Getdate 1 4 Str_Year
+ strcopy Str_Getdate 6 2 Str_Mon
+ strcopy Str_Getdate 9 2 Str_Day
+
+;; ログ名に利用する時刻情報を取得する
+ gettime Str_Gettime
+ strcopy Str_Gettime 1 2 Str_Hour
+ strcopy Str_Gettime 4 2 Str_Min
+ strcopy Str_Gettime 7 2 Str_Sec
+
+;; ログ名を生成する
+ LOG_PATH = LOG_DIR_PATH
+ strconcat LOG_PATH Str_Year
+ strconcat LOG_PATH Str_Mon
+ strconcat LOG_PATH Str_Day
+ strconcat LOG_PATH '_'
+ strconcat LOG_PATH Str_Hour
+ strconcat LOG_PATH Str_Min
+ strconcat LOG_PATH Str_Sec
+ strconcat LOG_PATH '_'
+ strconcat LOG_PATH HOST_CONNECT_NAME
+ strconcat LOG_PATH '.log'
+
+;; 現在記録しているログの情報を取得する
+ loginfo NOW_LOG_PATH
+
+;; 現在ログが記録されていた場合、マクロで規定したフォルダに移動する
+ if result <> -1 then
+     ;; 一度ログの記録を停止する
+      logclose
+
+     ;; 取得されていたログをマクロで規定した場所にコピーする
+      filecopy NOW_LOG_PATH LOG_PATH
+
+     ;; 取得されていたログを削除する
+      filedelete NOW_LOG_PATH
+ endif
+
+;; ログの記録を開始する
+ logopen LOG_PATH 0 1 1 1
+
+
+
+;;-------------------------------------------------------
+;; Command.listの内容を実行させる
+;;-------------------------------------------------------
+ strcompare HOST_CONNECT_TYPE 'ssh'
+ if result = 0 then
+    ;; ssh接続
+
+    ;; host.listでログインユーザの設定がされていたか確認する
+     strlen HOST_CONNECT_USER
+     if result <> 0 then
+          wait '$' '#'
+          sendln ''
+
+          wait '$' '#'
+          sendln '#rootユーザーにスイッチする'
+
+         ;; 「sudo su -」でスイッチする必要がある場合
+          strlen HOST_CONNECT_SUDO_FLAG
+          if Result > 0 then
+              wait '$' '#'
+              sendln 'sudo su -'
+
+              wait ':'
+              sendln SSH_CONNECT_PASS
+          else
+              wait '$' '#'
+              sendln 'su -'
+
+              wait ':'
+              sendln HOST_CONNECT_ROOT_PASS
+          endif
+     endif
+     wait '$' '#'
+     sendln ''
+
+    ;; Command.listを読み込む
+     fileopen COMMAND_LIST COMMAND_FILE 0
+     while 1
+          filereadln COMMAND_LIST COMMAND_LIST_LINE
+          if RESULT = 1 then
+            break
+          endif
+
+          flushrecv
+          wait '$' '#'
+          sendln COMMAND_LIST_LINE
+     endwhile
+     fileclose COMMAND_LIST
+    end
+ else
+   ;; telnet接続
+    wait 'sername:'
+    sendln SSH_CONNECT_USER
+
+    wait 'assword:'
+    sendln SSH_CONNECT_PASS
+ endif
