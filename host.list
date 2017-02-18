@@ -1,29 +1,33 @@
-# SSHAutoLogin.ttl�p ���O�C���z�X�g�ݒ�t�@�C��
-# �����珇�ɁA�ȉ��̓��e���L�q���Ă����B
-# HOST_NAME(�C�ӂ̖��́B�ڑ�����z�X�g�̑I�����⃍�O���ɗ��p����B�K�{�B)
-# HOST_INI(�C�ӂ�INI�t�@�C�����BTeraterm���s���ɓǂݍ���ini�t�@�C�����w�肷��B�K�{�B)
-# HOST_TYPE(ssh��Telnet���B�K�{�B)
-# HOST_IP�i�z�X�g��IP�A�h���X�B�ڑ����ɗ��p����B�K�{�B�j
-# HOST_KEY�i�z�X�g�փ��O�C�����邽�߂̃J�M�t�@�C���B�ڑ����ɗ��p����B�C�ӁB�j
-# HOST_ROOT_USER(�Ǘ��҃��[�U(���O�C�����[�U))���B���O�C�����[�U��ݒ肵�ăX�C�b�`����ꍇ��root���[�U��ݒ�B�K�{�B)
-# HOST_ROOT_PASS(�Ǘ��҃��[�U�U(���O�C�����[�U)�p�X���[�h�B�K�{�B)
-# HOST_USER(���O�C�����[�U���B�Ǘ��҃��[�U�Œ��ڃ��O�C���o����ꍇ�͕s�v�B)
-# HOST_PASS(���O�C�����[�U�p�X���[�h�B�Ǘ��҃��[�U�Œ��ڃ��O�C���o����ꍇ�͕s�v�B)
-# SUDO_FLAG(�X�C�b�`�����usudo su -�v�Ƃ��邩�ۂ��B��������(0�ł�1�ł�)���͂���ƗL���ɂȂ�B�X�C�b�`���̃R�}���h���usu -�v�̏ꍇ�͕s�v)
+# SSHAutoLogin.ttl用 ログインホスト設定ファイル
+# 左から順に、以下の内容を記述していく。
+# HOST_NAME(任意の名称。接続するホストの選択時やログ名に利用する。必須。)
+# HOST_INI(任意のINIファイル名。Teraterm実行時に読み込むiniファイルを指定する。必須。)
+# HOST_TYPE(sshかTelnetか。必須。)
+# HOST_IP（ホストのIPアドレス。接続時に利用する。必須。）
+# HOST_KEY（ホストへログインするためのカギファイル。接続時に利用する。任意。）
+# HOST_CFLAG(チャレンジレスポンス認証フラグ。チャレンジレスポンスを使用する場合は1を、そうでない場合は0を入力する)
+# HOST_ROOT_USER(管理者ユーザ(ログインユーザ))名。ログインユーザを設定してスイッチする場合はrootユーザを設定。必須。)
+# HOST_ROOT_PASS(管理者ユーザザ(ログインユーザ)パスワード。必須。)
+# HOST_USER(ログインユーザ名。管理者ユーザで直接ログイン出来る場合は不要。)
+# HOST_PASS(ログインユーザパスワード。管理者ユーザで直接ログイン出来る場合は不要。)
+# SUDO_FLAG(スイッチ文を「sudo su -」とするか否か。何かしら(0でも1でも)入力すると有効になる。スイッチ時のコマンドが「su -」の場合は不要)
 
-#�@HOST_NAME, HOST_INI, HOST_IP, HOST_KEY, HOST_ROOT_USER, HOST_ROOT_PASS, HOST_USER, HOST_PASS, SUDO_FLAG
+#　HOST_NAME, HOST_INI, HOST_IP, HOST_KEY, HOST_ROOT_USER, HOST_ROOT_PASS, HOST_USER, HOST_PASS, SUDO_FLAG
 
-# CentOS(�usu -�v)�ŃX�C�b�`�����
-Test-CentOS1,CentOS.ini,ssh,192.168.0.240,,root,rootpass,test,password,
+# CentOS(「su -」)でスイッチする例
+Test-CentOS1,CentOS.ini,ssh,192.168.0.101,,0,root,rootpass,test,password,
 
-# CentOS(�usu -�v)�ŃX�C�b�`�����ɒ��ڃ��O�C�������
-Test-CentOS2,CentOS.ini,ssh,172.28.0.102,,root,password,
+# CentOS(「su -」)でスイッチせずに直接ログインする例
+Test-CentOS2,CentOS.ini,ssh,172.28.0.102,,0,root,password,
 
-# Ubuntu(sudo su -)�ŃX�C�b�`�����
-Test-Ubuntu1,Ubuntu.ini,ssh,172.28.0.103,,root,rootpass,test,password,1
+# Ubuntu(sudo su -)でスイッチする例
+Test-Ubuntu1,Ubuntu.ini,ssh,172.28.0.103,,0,root,rootpass,test,password,1
 
-# �閧�����O�C��������ꍇ
-Test-Ubuntu2,Ubuntu.ini,ssh,172.28.0.103,C:\path\to\key,test
+# 秘密鍵ログインをする場合
+Test-Ubuntu2,Ubuntu.ini,ssh,172.28.0.104,C:\path\to\key,0,test
 
-# telnet�Ń��O�C������ꍇ(���O�̋��ʃR�}���h���s�͂���Ȃ�)
-Test-Ubuntu3,Ubuntu.ini,telnet,172.28.0.103,test,password
+# チャレンジレスポンスでログインする場合
+Test-CentOS3,CentOS.ini,ssh,192.168.0.105,,1,root,rootpass
+
+# telnetでログインする場合(事前の共通コマンド実行はされない)
+Test-Ubuntu3,Ubuntu.ini,telnet,172.28.0.106,,0,test,password
