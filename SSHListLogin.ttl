@@ -9,20 +9,20 @@
 ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 ;;-------------------------------------------------------
-;; �ڑ����̊�{�I�ȏ���ݒ肷��
+;; 接続時の基本的な情報を設定する
 ;;-------------------------------------------------------
-;; �z�X�g�Ɋւ���������t�@�C���uhost.list�v�̏ꏊ��ݒ肷��
+;; ホストに関する情報をもつファイル「host.list」の場所を設定する
  HOST_FILE = "host.list"
 
-;; ���O�C�����Ɏ��s������R�}���h�̏������t�@�C���ucommand.list�v�̏ꏊ��ݒ肷��
+;; ログイン時に実行させるコマンドの情報をもつファイル「command.list」の場所を設定する
  COMMAND_FILE = "command.list"
 
-;; ���O�쐬�p�f�B���N�g���̏����擾����
+;; ログ作成用ディレクトリの情報を取得する
  getdir CurrentDir
  LOG_DIR_PATH = CurrentDir
  strconcat LOG_DIR_PATH 'K:\log'
 
-;; ini�t�@�C���ݒu�f�B���N�g���̏����擾����
+;; iniファイル設置ディレクトリの情報を取得する
  getdir CurrentDir
  INI_DIR_PATH = CurrentDir
  strconcat INI_DIR_PATH '\ini\'
@@ -30,26 +30,26 @@
 
 
 ;;-------------------------------------------------------
-;; �z�X�g�I����ʂ��쐬����
+;; ホスト選択画面を作成する
 ;;-------------------------------------------------------
-;; �z�X�g�t�@�C���̍s�����擾����
+;; ホストファイルの行数を取得する
  fileopen HOST_LIST HOST_FILE 0
  i = 0
  while
      filereadln HOST_LIST LIST_LINE
 
-    ;;�t�@�C���ǂݍ��݂̏I������
+    ;;ファイル読み込みの終了処理
      if result = 1 then
        break
      endif
 
-    ;; �󔒍s�𖳎�����
+    ;; 空白行を無視する
      strlen LIST_LINE
      if result = 0 then
        continue
      endif
 
-    ;; �u#�v����n�܂�s���R�����g�Ƃ��Ė���
+    ;; 「#」から始まる行をコメントとして無視
      strmatch LIST_LINE '^#'
      if result <> 0 then
        continue
@@ -57,75 +57,79 @@
      i=i+1
  endwhile
 
-;; �z����쐬
+;; 配列を作成
  strdim HOST_NAME i
  strdim HOST_INI i
  strdim HOST_TYPE i
  strdim HOST_IP i
  strdim HOST_KEY i
+ strdim HOST_CFLAG i
  strdim HOST_USER i
  strdim HOST_PASS i
  strdim HOST_ROOT_USER i
  strdim HOST_ROOT_PASS i
  strdim HOST_SUDO_FLAG i
 
-;; �z�X�g�Ɋւ�������z�X�g�t�@�C������擾����
+;; ホストに関する情報をホストファイルから取得する
  fileopen HOST_LIST HOST_FILE 0
  i = 0
  while
      filereadln HOST_LIST LIST_LINE
 
-    ;;�t�@�C���ǂݍ��݂̏I������
+    ;;ファイル読み込みの終了処理
      if result = 1 then
        break
      endif
 
-    ;; �󔒍s�𖳎�����
+    ;; 空白行を無視する
      strlen LIST_LINE
      if result = 0 then
        continue
      endif
 
-    ;; �u#�v����n�܂�s���R�����g�Ƃ��Ė���
+    ;; 「#」から始まる行をコメントとして無視
      strmatch LIST_LINE '^#'
      if result <> 0 then
        continue
      endif
 
-    ;;�z�X�g�Ɋւ�������e�ϐ��֑������
+    ;;ホストに関する情報を各変数へ代入する
      strsplit LIST_LINE ','
      HOST_NAME[i]      = groupmatchstr1
      HOST_INI[i]       = groupmatchstr2
      HOST_TYPE[i]      = groupmatchstr3
      HOST_IP[i]        = groupmatchstr4
      HOST_KEY[i]       = groupmatchstr5
-     HOST_ROOT_USER[i] = groupmatchstr6
-     HOST_ROOT_PASS[i] = groupmatchstr7
-     HOST_USER[i]      = groupmatchstr8
+     HOST_CFLAG[i]     = groupmatchstr6
+     HOST_ROOT_USER[i] = groupmatchstr7
+     HOST_ROOT_PASS[i] = groupmatchstr8
 
-    ;; �d�l��A�����񕪊���10�ȍ~�͂��ׂ�groupmatchstr9�ɑ������邽�߁A�����ōēx�������s��
+    ;; 仕様上、文字列分割で10以降はすべてgroupmatchstr9に代入されるため、ここで再度分割を行う
      strsplit groupmatchstr9 ','
-     HOST_PASS[i]      = groupmatchstr1
-     HOST_SUDO_FLAG[i] = groupmatchstr2
+     HOST_USER[i]      = groupmatchstr1
+     HOST_PASS[i]      = groupmatchstr2
+     HOST_SUDO_FLAG[i] = groupmatchstr3
 
      i=i+1
  endwhile
 
-;; �z�X�g�I����ʂ�\��������
- listbox '���O�C������z�X�g��I�����Ă�������' '�z�X�g�I��' HOST_NAME
+;; ホスト選択画面を表示させる
+ listbox 'ログインするホストを選択してください' 'ホスト選択' HOST_NAME
 
 
 
 ;;-------------------------------------------------------
-;; �I�����ꂽ�z�X�g�Ƀ��O�C�����s��
+;; 選択されたホストにログインを行う
 ;;-------------------------------------------------------
-;; �z�X�g�I����ʂőI�����ꂽ�z�X�g�̏���ϐ��ɑ������
+;; ホスト選択画面で選択されたホストの情報を変数に代入する
  if result >= 0 then
      HOST_CONNECT_NAME      = HOST_NAME[result]
      HOST_CONNECT_INI       = HOST_INI[result]
      HOST_CONNECT_TYPE      = HOST_TYPE[result]
+     HOST_CONNECT_TYPE      = HOST_TYPE[result]
      HOST_CONNECT_IP        = HOST_IP[result]
      HOST_CONNECT_KEY       = HOST_KEY[result]
+     HOST_CONNECT_CFLAG     = HOST_CFLAG[result]
      HOST_CONNECT_ROOT_USER = HOST_ROOT_USER[result]
      HOST_CONNECT_ROOT_PASS = HOST_ROOT_PASS[result]
      HOST_CONNECT_USER      = HOST_USER[result]
@@ -135,7 +139,7 @@
      end
  endif
 
-;; ���O�C���p�̃��[�U�[����`����Ă��邩�m�F����
+;; ログイン用のユーザーが定義されているか確認する
  strlen HOST_CONNECT_USER
  if result <> 0 then
      SSH_CONNECT_USER = HOST_CONNECT_USER
@@ -145,11 +149,11 @@
      SSH_CONNECT_PASS = HOST_CONNECT_ROOT_PASS
  endif
 
-;; �ڑ��p��INI�t�@�C��PATH���擾����
+;; 接続用のINIファイルPATHを取得する
  INI_FILE = INI_DIR_PATH
  strconcat INI_FILE HOST_CONNECT_INI
 
-;; ���t�@�C���̎w�肪���邩���m�F����
+;; 鍵ファイルの指定があるかを確認する
  strlen HOST_CONNECT_KEY
  if result <> 0 then
      HOST_CONNECT_KEY_FILE = HOST_CONNECT_KEY
@@ -157,61 +161,69 @@
      HOST_CONNECT_KEY_FILE = ""
  endif
 
-;; SSH�ڑ��R�}���h���쐬����
+;; SSH接続コマンドを作成する
  COMMAND = HOST_CONNECT_IP
 
-;; ssh��telnet��
+;; sshかtelnetか
  strcompare HOST_CONNECT_TYPE 'ssh'
  if result = 0 then
-    ;; ssh�������ꍇ
+    ;; sshだった場合
      strconcat COMMAND ':22 /ssh /2 '
      strconcat COMMAND '/F="'
      strconcat COMMAND INI_FILE
      strconcat COMMAND '" /user='
      strconcat COMMAND SSH_CONNECT_USER
 
-    ;; �p�X���[�h�F�؂̏ꍇ
-     strlen SSH_CONNECT_PASS
-     if result <> 0 then
-         strconcat COMMAND ' /passwd='
-         strconcat COMMAND SSH_CONNECT_PASS
-     endif
-
-    ;; ���F�؂̏ꍇ
+    ;; 鍵認証かパスワード認証か
      strlen HOST_CONNECT_KEY_FILE
      if result <> 0 then
+        ;; 鍵認証
          strconcat COMMAND ' /auth=publickey'
          strconcat COMMAND ' /keyfile='
          strconcat COMMAND HOST_CONNECT_KEY_FILE
      else
-         strconcat COMMAND ' /auth=password'
+        ;; パスワード認証かチャレンジレスポンスか
+         strcompare HOST_CONNECT_CFLAG '1'
+         if result <> 0 then
+             strconcat COMMAND ' /auth=password'
+         else
+
+             strconcat COMMAND ' /auth=challenge'
+         endif
+
+        ;; パスワード指定
+         strlen SSH_CONNECT_PASS
+         if result <> 0 then
+             strconcat COMMAND ' /passwd='
+             strconcat COMMAND SSH_CONNECT_PASS
+         endif
      endif
  else
-    ;; ssh�ł͂Ȃ������ꍇ
+    ;; sshではなかった場合
      strconcat COMMAND ':23 /nossh /T=1'
  endif
 
-;; SSH�ڑ����s��
+;; SSH接続を行う
  connect COMMAND
 
 
 
 ;;-------------------------------------------------------
-;; ���O�̋L�^���J�n����
+;; ログの記録を開始する
 ;;-------------------------------------------------------
-;; ���O���ɗ��p������t�����擾����
+;; ログ名に利用する日付情報を取得する
  getdate Str_Getdate
  strcopy Str_Getdate 1 4 Str_Year
  strcopy Str_Getdate 6 2 Str_Mon
  strcopy Str_Getdate 9 2 Str_Day
 
-;; ���O���ɗ��p���鎞�������擾����
+;; ログ名に利用する時刻情報を取得する
  gettime Str_Gettime
  strcopy Str_Gettime 1 2 Str_Hour
  strcopy Str_Gettime 4 2 Str_Min
  strcopy Str_Gettime 7 2 Str_Sec
 
-;; ���O���𐶐�����
+;; ログ名を生成する
  LOG_PATH = LOG_DIR_PATH
  strconcat LOG_PATH Str_Year
  strconcat LOG_PATH Str_Mon
@@ -224,43 +236,43 @@
  strconcat LOG_PATH HOST_CONNECT_NAME
  strconcat LOG_PATH '.log'
 
-;; ���݋L�^���Ă��郍�O�̏����擾����
+;; 現在記録しているログの情報を取得する
  loginfo NOW_LOG_PATH
 
-;; ���݃��O���L�^����Ă����ꍇ�A�}�N���ŋK�肵���t�H���_�Ɉړ�����
+;; 現在ログが記録されていた場合、マクロで規定したフォルダに移動する
  if result <> -1 then
-     ;; ��x���O�̋L�^���~����
+     ;; 一度ログの記録を停止する
       logclose
 
-     ;; �擾����Ă������O���}�N���ŋK�肵���ꏊ�ɃR�s�[����
+     ;; 取得されていたログをマクロで規定した場所にコピーする
       filecopy NOW_LOG_PATH LOG_PATH
 
-     ;; �擾����Ă������O���폜����
+     ;; 取得されていたログを削除する
       filedelete NOW_LOG_PATH
  endif
 
-;; ���O�̋L�^���J�n����
+;; ログの記録を開始する
  logopen LOG_PATH 0 1 1 1
 
 
 
 ;;-------------------------------------------------------
-;; Command.list�̓��e�����s������
+;; Command.listの内容を実行させる
 ;;-------------------------------------------------------
  strcompare HOST_CONNECT_TYPE 'ssh'
  if result = 0 then
-    ;; ssh�ڑ�
+    ;; ssh接続
 
-    ;; host.list�Ń��O�C�����[�U�̐ݒ肪����Ă������m�F����
+    ;; host.listでログインユーザの設定がされていたか確認する
      strlen HOST_CONNECT_USER
      if result <> 0 then
           wait '$' '#'
           sendln ''
 
           wait '$' '#'
-          sendln '#root���[�U�[�ɃX�C�b�`����'
+          sendln '#rootユーザーにスイッチする'
 
-         ;; �usudo su -�v�ŃX�C�b�`����K�v������ꍇ
+         ;; 「sudo su -」でスイッチする必要がある場合
           strlen HOST_CONNECT_SUDO_FLAG
           if Result > 0 then
               wait '$' '#'
@@ -279,7 +291,7 @@
      wait '$' '#'
      sendln ''
 
-    ;; Command.list��ǂݍ���
+    ;; Command.listを読み込む
      fileopen COMMAND_LIST COMMAND_FILE 0
      while 1
           filereadln COMMAND_LIST COMMAND_LIST_LINE
@@ -294,7 +306,7 @@
      fileclose COMMAND_LIST
     end
  else
-   ;; telnet�ڑ�
+   ;; telnet接続
     wait 'sername:'
     sendln SSH_CONNECT_USER
 
