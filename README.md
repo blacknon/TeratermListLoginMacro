@@ -1,0 +1,2 @@
+# TeratermListLoginMacro
+Teraterm リストボックス使用のログインマクロ
